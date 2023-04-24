@@ -67,3 +67,10 @@ def create_item_for_user(
 def read_items(skip: int = 0, limit: int = 100, db: Session = db_session):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
+
+
+@app.get("/me/items", response_model=List[schemas.Item], dependencies=[Depends(verify_key)])
+def read_items_by_me(skip: int = 0, limit: int = 100, db: Session = db_session, x_api_token: str = Header(...)):
+    db_user = crud.get_user_by_token(db, token=x_api_token)
+    items = crud.get_items_by_me(db, db_user.id, skip=skip, limit=limit)
+    return items
