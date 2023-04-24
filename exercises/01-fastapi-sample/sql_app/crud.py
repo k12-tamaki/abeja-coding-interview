@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 
 from . import models, schemas
 
-import string
 from secrets import token_hex
 
 
