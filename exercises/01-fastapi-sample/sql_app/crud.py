@@ -31,6 +31,25 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
+def delete_user(db: Session, db_user: schemas.User, skip: int = 0, limit: int = 100):
+    db_user.is_active = False
+    db.add(db_user)
+
+    attach_db_user = db.query(models.User).filter(
+        models.User.is_active == True and
+        models.User.id != db_user.id
+    ).order_by(models.User.id).first()
+    if attach_db_user == None:
+        return 'NotUser'
+    atacch_items = db.query(models.Item).filter(models.Item.owner_id == db_user.id).offset(skip).limit(limit).all()
+    for atacch_item in atacch_items:
+        atacch_item.owner_id = attach_db_user.id
+        db.add(atacch_item)
+
+    db.commit()
+    return 'OK'
+
+
 def get_items(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Item).offset(skip).limit(limit).all()
 

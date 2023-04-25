@@ -26,7 +26,7 @@ db_session = Depends(get_db)
 async def verify_key(x_api_token: str = Header(...), db: Session = db_session):
     db_user = crud.get_user_by_token(db, token=x_api_token)
     if db_user == None:
-        raise HTTPException(status_code=400, detail="X-API-TOKEN header invalid")
+        raise HTTPException(status_code=404, detail="X-API-TOKEN header invalid")
 
 
 @app.get("/health-check", dependencies=[Depends(verify_key)])
@@ -39,7 +39,7 @@ def create_user(user: schemas.UserCreate, db: Session = db_session):
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
+    return crud.create_user(db, user=user)
 
 
 @app.get("/users/", response_model=List[schemas.User], dependencies=[Depends(verify_key)])
@@ -56,11 +56,20 @@ def read_user(user_id: int, db: Session = db_session):
     return db_user
 
 
+@app.delete("/users/{user_id}", dependencies=[Depends(verify_key)])
+def delete_user(user_id:int, db: Session = db_session):
+    db_user = crud.get_user(db, user_id=user_id)
+    result = crud.delete_user(db, db_user)
+    if result == "NotUser":
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"status": "ok"}
+
+
 @app.post("/users/{user_id}/items/", response_model=schemas.Item, dependencies=[Depends(verify_key)])
 def create_item_for_user(
     user_id: int, item: schemas.ItemCreate, db: Session = db_session
 ):
-    return crud.create_user_item(db=db, item=item, user_id=user_id)
+    return crud.create_user_item(db, item=item, user_id=user_id)
 
 
 @app.get("/items/", response_model=List[schemas.Item], dependencies=[Depends(verify_key)])
